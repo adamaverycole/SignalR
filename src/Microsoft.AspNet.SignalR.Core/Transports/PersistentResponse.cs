@@ -66,9 +66,9 @@ namespace Microsoft.AspNet.SignalR.Transports
         public bool Aborted { get; set; }
 
         /// <summary>
-        /// True if the connection timed out.
+        /// True if the host is shutting down. This is used to indicate to the client that it should try reconnecting.
         /// </summary>
-        public bool TimedOut { get; set; }
+        public bool HostShutdown { get; set; }
 
         /// <summary>
         /// Signed token representing the list of groups. Updates on change.
@@ -117,7 +117,7 @@ namespace Microsoft.AspNet.SignalR.Transports
                 jsonWriter.WriteValue(1);
             }
 
-            if (TimedOut)
+            if (HostShutdown)
             {
                 jsonWriter.WritePropertyName("T");
                 jsonWriter.WriteValue(1);
