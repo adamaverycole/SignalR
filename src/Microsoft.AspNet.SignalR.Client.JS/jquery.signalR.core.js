@@ -75,8 +75,9 @@
 
         configurePingInterval = function (connection) {
             var config = connection._.config,
-                onFail = function () {
-                    $(connection).triggerHandler(events.onError, ["SignalR: Pinging server failed, current user may no longer be authenticated, stopping the connection."]);
+                onFail = function (errorMessage) {
+                    connection.log("SignalR: Pinging server failed, current user may no longer be authenticated, stopping the connection.");
+                    $(connection).triggerHandler(events.onError, ["Pinging server failed with error message '" + errorMessage +"', current user may no longer be authenticated, stopping the connection."]);
                     // If we fail then we should kill the connection
                     connection.stop();
                 };

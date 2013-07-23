@@ -75,47 +75,54 @@
             /// <summary>Pings the server</summary>
             /// <param name="connection" type="signalr">Connection associated with the server ping</param>
             /// <returns type="signalR" />
-            var baseUrl = connection.transport.name === "webSockets" ? "" : connection.baseUrl,
-                url = baseUrl + connection.appRelativeUrl + "/ping",
-                deferral = $.Deferred(),
+            var baseUrl, url, deferral = $.Deferred(), onFail;
+
+            if (connection.transport) {
+                baseUrl = connection.transport.name === "webSockets" ? "" : connection.baseUrl;
+                url = baseUrl + connection.appRelativeUrl + "/ping";
                 onFail = function (errorMessage) {
                     deferral.reject("SignalR: Error pinging server: " + errorMessage);
                 };
 
-            url = transportLogic.prepareQueryString(connection, url);
+                url = transportLogic.prepareQueryString(connection, url);
 
-            $.ajax(
-                $.extend({}, $.signalR.ajaxDefaults, {
-                    xhrFields: { withCredentials: connection.withCredentials },
-                    url: url,
-                    type: "GET",
-                    contentType: connection.contentType,
-                    data: {},
-                    dataType: connection.ajaxDataType,
-                    success: function (result) {
-                        var data;
+                $.ajax(
+                    $.extend({}, $.signalR.ajaxDefaults, {
+                        xhrFields: { withCredentials: connection.withCredentials },
+                        url: url,
+                        type: "GET",
+                        contentType: connection.contentType,
+                        data: {},
+                        dataType: connection.ajaxDataType,
+                        success: function (result) {
+                            var data;
 
-                        try {
-                            data = connection._parseResponse(result);
-                        }
-                        catch (error) {
-                            onFail(error.message);
-                            connection.stop();
-                            return;
-                        }
+                            try {
+                                data = connection._parseResponse(result);
+                            }
+                            catch (error) {
+                                onFail(error.message);
+                                connection.stop();
+                                return;
+                            }
 
-                        if (data.Response === "pong") {
-                            deferral.resolve();
+                            if (data.Response === "pong") {
+                                deferral.resolve();
+                            }
+                            else {
+                                deferral.reject("SignalR: Invalid ping response when pinging server: " + (data.responseText || data.statusText));
+                            }
+                        },
+                        error: function (error) {
+                            onFail((error.responseText || error.statusText));
                         }
-                        else {
-                            deferral.reject("SignalR: Invalid ping response when pinging server: " + (data.responseText || data.statusText));
-                        }
-                    },
-                    error: function (error) {
-                        onFail((error.responseText || error.statusText));
                     }
-                }
-            ));
+                ));
+
+            }
+            else {
+                deferral.reject("Connection is in an invalid state, there is no transport active.");
+            }
 
             return deferral.promise();
         },
