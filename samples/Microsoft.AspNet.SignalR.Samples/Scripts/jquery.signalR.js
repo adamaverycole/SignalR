@@ -1036,7 +1036,7 @@
                 Messages: minPersistentResponse.M,
                 Initialized: typeof (minPersistentResponse.S) !== "undefined" ? true : false,
                 Disconnect: typeof (minPersistentResponse.D) !== "undefined" ? true : false,
-                TimedOut: typeof (minPersistentResponse.T) !== "undefined" ? true : false,
+                ShouldReconnect: typeof (minPersistentResponse.T) !== "undefined" ? true : false,
                 LongPollDelay: minPersistentResponse.L,
                 GroupsToken: minPersistentResponse.G
             };
@@ -1888,7 +1888,8 @@
                             success: function (result) {
                                 var minData,
                                     delay = 0,
-                                    data;
+                                    data,
+                                    shouldReconnect;
 
                                 // Reset our reconnect errors so if we transition into a reconnecting state again we trigger
                                 // reconnected quickly
@@ -1926,13 +1927,19 @@
                                     return;
                                 }
 
+                                shouldReconnect = data && data.ShouldReconnect;
+                                if (shouldReconnect) {
+                                    // Transition into the reconnecting state
+                                    transportLogic.ensureReconnectingState(instance);
+                                }
+
                                 // We never want to pass a raiseReconnect flag after a successful poll.  This is handled via the error function
                                 if (delay > 0) {
                                     window.setTimeout(function () {
-                                        poll(instance, false);
+                                        poll(instance, shouldReconnect);
                                     }, delay);
                                 } else {
-                                    poll(instance, false);
+                                    poll(instance, shouldReconnect);
                                 }
                             },
 
